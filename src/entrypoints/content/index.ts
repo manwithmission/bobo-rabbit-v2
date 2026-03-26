@@ -10,6 +10,19 @@ export default defineContentScript({
       anchor: 'body',
       append: 'last',
       onMount: (container: HTMLElement) => {
+        // Fetch generated CSS string from the background to bypass page-level CSP
+        const shadow = container.getRootNode() as ShadowRoot;
+        if (shadow && !shadow.querySelector('style[data-bobo-css]')) {
+          browser.runtime.sendMessage({ action: 'fetch_css', url: '/content-scripts/content.css' }).then((css) => {
+            if (css && typeof css === 'string') {
+              const style = document.createElement('style');
+              style.setAttribute('data-bobo-css', 'true');
+              style.textContent = css.replaceAll(':root', ':host');
+              shadow.insertBefore(style, container);
+            }
+          });
+        }
+
         const app = createApp(App);
         app.mount(container);
         return app;
