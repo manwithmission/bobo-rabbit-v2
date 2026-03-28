@@ -16,5 +16,6 @@ declare module 'vue' {
     ElInput: typeof import('element-plus/es')['ElInput']
     HelloWorld: typeof import('./src/components/HelloWorld.vue')['default']
     LinkListPopover: typeof import('./src/components/LinkListPopover.vue')['default']
+    MessageBox: typeof import('./src/components/MessageBox.vue')['default']
   }
 }

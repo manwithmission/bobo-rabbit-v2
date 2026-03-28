@@ -3,6 +3,7 @@
     <div class="chat-messages">
       <DynamicScroller
         v-if="messages.length > 0"
+        ref="scrollerRef"
         :items="messages"
         :min-item-size="50"
         key-field="id"
@@ -79,6 +80,13 @@ import 'vue-virtual-scroller/dist/vue-virtual-scroller.css';
 import rabbitRead from '../../assets/rabbit_read.png';
 import { MdPreview } from 'md-editor-v3';
 import 'md-editor-v3/lib/preview.css';
+
+const scrollerRef = ref<InstanceType<typeof DynamicScroller> | null>(null);
+
+/** 滚动到底部 */
+const scrollToBottom = () => {
+  scrollerRef.value?.scrollToBottom();
+};
 
 // Implement custom useChat to avoid `@ai-sdk/vue` missing exports on Vercel AI SDK v3/v4 bindings
 function useChat({ api }: { api: string }) {
@@ -170,6 +178,10 @@ const { messages, input, handleSubmit, isLoading, stop } = useChat({
   api: 'http://localhost:3008/api/chat',
 });
 
+watch(messages, () => {
+  scrollToBottom();
+}, { deep: true, flush: 'post' });
+
 watch(isLoading, (newVal) => {
   if (!newVal) {
     nextTick(() => {
@@ -178,8 +190,9 @@ watch(isLoading, (newVal) => {
   }
 });
 
-const handleEnter = (e: KeyboardEvent) => {
-  if (e.shiftKey) {
+const handleEnter = (e: Event | KeyboardEvent) => {
+  const ke = e as KeyboardEvent;
+  if (ke.shiftKey) {
     // allow multiline on Shift+Enter
     return;
   }

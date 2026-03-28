@@ -1,5 +1,13 @@
 <template>
   <div class="bobo-app-container" ref="appContainer">
+    <!-- 消息框：放在 el-popover 外部，避免触发 popover 事件 -->
+    <MessageBox
+      ref="messageBoxRef"
+      :buttonPosition="position"
+      :buttonWidth="80"
+      @confirm="onMessageConfirm"
+    />
+
     <el-popover ref="popoverRef" popper-class="bobo-popover" placement="left" :width="200" trigger="contextmenu" :teleported="false">
       <template #reference>
         <div
@@ -50,9 +58,11 @@
 <script setup lang="ts">
 import "@/components/LinkListPopover.vue"
 import "@/assets/iconfont/iconfont.css"
+import MessageBox from "@/components/MessageBox.vue"
 
 const buttonRef = ref<any>(null);
 const popoverRef = ref<any>(null);
+const messageBoxRef = ref<InstanceType<typeof MessageBox> | null>(null);
 const position = ref({ x: -1, y: -1 });
 const isDragging = ref(false);
 const isHovering = ref(false);
@@ -145,13 +155,52 @@ const viewGithubHot = async () => {
   popoverRef.value?.hide?.();
 }
 
+/**
+ * 显示消息通知（不会触发 popover）
+ */
+const showMessage = (
+  msg: string,
+  type: 'info' | 'success' | 'warning' | 'error' = 'info',
+  duration: number = 3000,
+) => {
+  messageBoxRef.value?.show(msg, type, duration)
+}
+
+// 暴露给外部使用
+defineExpose({ showMessage })
+
+/**
+ * 用户点击消息框的“好的”按钮后，通知 background 重新启动定时器
+ */
+const onMessageConfirm = () => {
+  browser.runtime.sendMessage({ action: 'restart_health_timer' })
+}
+
+/**
+ * 监听来自 background 的消息
+ */
+const onBackgroundMessage = (message: any) => {
+  if (message.action === 'health_reminder') {
+    messageBoxRef.value?.showWithConfirm(
+      '久坐有害健康，起来站站，休息一下，喝口水吧~',
+      'warning',
+    )
+  }
+  if (message.action === 'close_health_dialog') {
+    messageBoxRef.value?.close()
+  }
+}
+
 onMounted(() => {
   window.addEventListener('resize', handleResize);
+  browser.runtime.onMessage.addListener(onBackgroundMessage);
 });
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize);
+  browser.runtime.onMessage.removeListener(onBackgroundMessage);
 });
+
 
 </script>
 

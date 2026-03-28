@@ -4,14 +4,23 @@
         <slot name="reference"></slot>
       </template>
       <div class="popover-body">
-        <div v-for="item in linkList" :key="item.id" class="link-button" @click="visitLink(item.url)">
-          <el-image :src="item.icon" class="link-icon" fit="contain">
-            <template #error>
-              <img src="/public/icon/32.png" class="link-icon">
-            </template>
-          </el-image>
-          <div class="title">{{ item.title }}</div>
-        </div>
+        <RecycleScroller
+          class="link-list-scroller"
+          :items="linkList"
+          :item-size="47"
+          key-field="id"
+        >
+          <template #default="{ item }">
+            <div class="link-button" @click="visitLink(item.url)">
+              <el-image :src="item.icon" class="link-icon" fit="contain">
+                <template #error>
+                  <img src="/public/icon/32.png" class="link-icon">
+                </template>
+              </el-image>
+              <div class="title">{{ item.title }}</div>
+            </div>
+          </template>
+        </RecycleScroller>
         <div class="add-link-button" @click="addCurrentPage">
           <el-icon class="button-icon"><i-ep-plus /></el-icon>
           <div class="title">添加当前页面</div>
@@ -21,7 +30,9 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, reactive } from 'vue'
+import { ref } from 'vue'
+import { RecycleScroller } from 'vue-virtual-scroller'
+import 'vue-virtual-scroller/dist/vue-virtual-scroller.css'
 
 const props = defineProps({
     appContainer: {
@@ -111,13 +122,43 @@ onUnmounted(() => {
 
 </script>
 
-<style scss scoped>
+<style lang="scss" scoped>
 .bobo-popover{
   .popover-body{
+    .link-list-scroller{
+      max-height: 141px; // 3 items × 47px
+
+      // Element Plus 风格滚动条（穿透 scoped 到 RecycleScroller 内部）
+      :deep(.vue-recycle-scroller__slot),
+      :deep(&) {
+        scrollbar-width: thin;
+        scrollbar-color: #c0c4cc transparent;
+      }
+
+      &::-webkit-scrollbar,
+      :deep(*::-webkit-scrollbar) {
+        width: 6px;
+        height: 6px;
+      }
+      &::-webkit-scrollbar-track,
+      :deep(*::-webkit-scrollbar-track) {
+        background: transparent;
+      }
+      &::-webkit-scrollbar-thumb,
+      :deep(*::-webkit-scrollbar-thumb) {
+        background-color: #c0c4cc;
+        border-radius: 3px;
+        &:hover {
+          background-color: #909399;
+        }
+      }
+    }
     .link-button{
       display: flex;
       align-items: center;
       padding: 5px;
+      height: 42px;
+      box-sizing: border-box;
       background-color: rgba(237, 235, 247, 0.3);
       margin-bottom: 5px;
       cursor: pointer;
@@ -126,9 +167,10 @@ onUnmounted(() => {
         height: 32px;
         border-radius: 4px;
         margin-right: 10px;
+        flex-shrink: 0;
       }
       .title{
-        width: 50%;
+        flex: 1;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
